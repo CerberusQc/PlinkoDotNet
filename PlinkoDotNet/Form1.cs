@@ -57,6 +57,7 @@ namespace PlinkoDotNet
             List<String> shuffled_cards = ShuffleCards(cards);
             Random random = new Random();
 
+            // Show back of all Card
             RefreshAllCard();
             Thread.Sleep(1000);
 
@@ -69,13 +70,17 @@ namespace PlinkoDotNet
 
                 // Remove the picked Card to avoid Duplicate Pick
                 shuffled_cards.RemoveAt(pick_index); 
+
+                // Update the Picked Card
                 String file = String.Format("{0}\\{1}.png", ASSETS_FOLDER, picked_card);
                 RefreshCard(card, file, true);
+
+                // Sleep for Drama Effect
                 Thread.Sleep(1000);
             }
 
             Thread.Sleep(2000);
-            RefreshAllCard(false);
+            RefreshAllCard(false); // Clear Everything
         }
 
         public Form1()
