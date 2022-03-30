@@ -101,6 +101,13 @@ namespace PlinkoDotNet
             if (int.TryParse(text, out int value))
             {
                 append_Text(String.Format("Starting a Plinko game with {0}$\n", value));
+                MessageBox.Refresh();
+                Graphics g = GameZone.CreateGraphics();
+                Color original = GamePanel.BackColor;
+                Brush b = new SolidBrush(Color.Red);
+                g.FillEllipse(b, GamePanel.Width / 2, GamePanel.Height / 2, 100, 100);
+                Thread.Sleep(1000);
+                g.Clear(original);
             }
             else
             {
