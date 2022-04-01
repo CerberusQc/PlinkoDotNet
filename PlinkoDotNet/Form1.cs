@@ -32,9 +32,10 @@ namespace PlinkoDotNet
 
             if (double.TryParse(text, out double value))
             {
-                append_Text(String.Format("Starting a Plinko game with {0}$\n", value));
+                append_Text(String.Format("Starting a Plinko game with {0} ring(s)\n", value));
                 Plinko game = new Plinko(GameZone, user, value);
                 double result = game.Play();
+                append_Text(String.Format("{0} won {1} ring(s)\n",user, result));
             }
             else
             {

@@ -14,7 +14,7 @@ namespace PlinkoDotNet
         public int row;
         public Point position;
         public List<Cell> cells;
-        public static int spacing = 20;
+        public static int spacing = 15;
         public static Size spacing_size = new Size(spacing, spacing);
 
         public Line(int row, Point position)
@@ -37,7 +37,7 @@ namespace PlinkoDotNet
                     if (i % 2 != 0)
                     {
                         int offset = i * spacing;
-                        cells.Add(new Cell(i * -1, new Point(position.X - (offset * -1), position.Y)));
+                        cells.Add(new Cell(i * -1, new Point(position.X + offset, position.Y)));
                         cells.Add(new Cell(i, new Point(position.X - (offset), position.Y)));
                     }
                 }
@@ -50,7 +50,7 @@ namespace PlinkoDotNet
                     else if (i % 2 == 0)
                     {
                         int offset = i * spacing;
-                        cells.Add(new Cell(i * -1, new Point(position.X - (offset * -1), position.Y)));
+                        cells.Add(new Cell(i * -1, new Point(position.X + offset, position.Y)));
                         cells.Add(new Cell(i, new Point(position.X - (offset), position.Y)));
                     }
                 }
@@ -65,9 +65,10 @@ namespace PlinkoDotNet
     {
         public int column;
         public Rectangle rectangle;
-        private static int cell_size = 15;
-        private Size circle_size = new Size(cell_size, cell_size);
+        public Brush brush = new SolidBrush(Color.DarkGray);
 
+        public static int cell_size = 10;
+        private Size circle_size = new Size(cell_size, cell_size);
 
         public Cell(int column, Point position)
         {
@@ -82,12 +83,26 @@ namespace PlinkoDotNet
         public float value;
         public Color color;
         public Pen pen;
+        public Brush brush;
 
         public Prize(float value, Color color)
         {
             this.value = value;
             this.color = color;
             this.pen = new Pen(color);
+            this.brush = new SolidBrush(color);
+        }
+    }
+
+    internal class PrizeRect
+    {
+        public Prize prize;
+        public Rectangle rectangle;
+
+        public PrizeRect(Prize prize, Rectangle rectangle)
+        {
+            this.prize = prize;
+            this.rectangle = rectangle;
         }
     }
     internal class Plinko
@@ -96,22 +111,45 @@ namespace PlinkoDotNet
         private Graphics graphics;
         private Rectangle rectangle;
         private Point center;
-        private int row_count = 12;
-        private int padding = 40;
-        private Line[] lines;
+        private const int padding = 30;
+        private bool debug = false;
+        private Cell ball;
+        private Brush ball_brush = new SolidBrush(Color.White);
+        private int speed = 200;
+        private int offset_left = -Line.spacing;
+        private int offset_right = Line.spacing;
+        private int offset_y = Line.spacing - 5;
+        private int offset_x = 0;
+        private Random random = new Random();
+
+        // prizes should always be odd numbers
+        private static Prize[] prizes = {
+            new Prize(5.0f, Color.Blue),
+            new Prize(2.0f, Color.BlueViolet),
+            new Prize(1.5f, Color.MediumPurple),
+            new Prize(1.0f, Color.MediumPurple),
+            new Prize(0.0f, Color.Purple),
+            new Prize(0.0f, Color.Purple),
+            new Prize(0.0f, Color.Purple),
+            new Prize(0.0f, Color.Purple),
+            new Prize(0.0f, Color.Purple),
+            new Prize(1.0f, Color.MediumPurple),
+            new Prize(1.5f, Color.MediumPurple),
+            new Prize(2.0f, Color.BlueViolet),
+            new Prize(5.0f, Color.Blue)
+         };
+
+        private static PrizeRect[] prizeRects = new PrizeRect[prizes.Length];
+
+        private static int row_count = prizes.Length - 1;
+
+        Brush cell_brush = new SolidBrush(Color.DarkGray);
+        Font text_font = new Font(FontFamily.GenericSansSerif, 8);
 
         String user;
         private double bet;
         Color color;
-        Brush cell_brush = new SolidBrush(Color.DarkGray);
-        Brush text_brush = new SolidBrush(Color.Black);
-        Font font = new Font(FontFamily.GenericSerif, 12);
-
-        Prize best_prize = new Prize(5.0f, Color.Gold);
-        Prize good_prize = new Prize(2.0f, Color.Green);
-        Prize medium_prize = new Prize(1.5f, Color.Blue);
-        Prize even_prize = new Prize(1.0f, Color.Yellow);
-        Prize bad_prize = new Prize(0.0f, Color.Red);
+        private Line[] lines;
 
         public Plinko(Control board, String user, double bet)
         {
@@ -133,27 +171,82 @@ namespace PlinkoDotNet
             for (int i = 1; i < row_count + 1; i++)
             {
                 int current = height / row_count * i;
-                Point start = new Point(center.X, current);
+                Point start = new Point(center.X - (Cell.cell_size / 2), current);
                 lines[i - 1] = new Line(i, start);
             }
         }
 
         public double Play()
         {
-            double result = 0;
-
-            // debug draw center line
-            graphics.DrawLine(Pens.Red, 0, center.Y, board.Width, center.Y);
+            if (debug)
+            {
+                // debug draw center line
+                graphics.DrawLine(Pens.Red, 0, center.Y, board.Width, center.Y);
+                graphics.DrawLine(Pens.Red, center.X, 0, center.X, board.Height);
+            }
 
             GenerateBoard();
-            DrawBoard();
             DrawPrizes();
-            Thread.Sleep(5000);
+            DrawBoard();
+            Thread.Sleep(1000);
+            DropBall();
+            Prize prize = CheckPrize();
+            Thread.Sleep(2000);
+
+            Clear();
+
+            return bet * prize.value;
+        }
+
+        private void Clear()
+        {
             graphics.Clear(color);
             graphics.Dispose();
             board.Refresh();
 
-            return result;
+        }
+
+        private void DropBall()
+        {
+            Line current_line = lines[0];
+            Cell first_cell = current_line.cells[0];
+            Point position = first_cell.rectangle.Location;
+            ball = new Cell(0, position);
+            ball.brush = ball_brush;
+
+
+            foreach (Line line in lines)
+            {
+               UpdateBall(line.position);
+               current_line = line;
+            }
+
+            current_line.position.Offset(0, Line.spacing);
+            UpdateBall(current_line.position);
+        }
+
+        private void UpdateBall(Point position)
+        {
+            position.X = ball.rectangle.X;
+            position.Offset(offset_x, -offset_y);
+            ball.rectangle.Location = position;
+            DrawCell(ball);
+
+            offset_x =  random.Next(2) == 0 ? offset_left : offset_right; // pick a side to fall
+            Thread.Sleep(speed);
+        }
+
+        private Prize CheckPrize()
+        {
+            foreach (PrizeRect prizeRect in prizeRects)
+            {
+                if (prizeRect.rectangle.Contains(ball.rectangle.Location))
+                {
+                    return prizeRect.prize;
+                }
+            }
+
+            return new Prize(0.0f, Color.Purple);
         }
 
         private void DrawBoard()
@@ -162,39 +255,38 @@ namespace PlinkoDotNet
             {
                 foreach (Cell cell in line.cells)
                 {
-                    DrawCircle(cell);
+                    DrawCell(cell);
                 }
             }
         }
 
-        private void DrawCircle(Cell cell)
+        private void DrawCell(Cell cell)
         {
-            graphics.FillEllipse(cell_brush, cell.rectangle);
+            graphics.FillEllipse(cell.brush, cell.rectangle);
         }
 
         private void DrawPrizes()
         {
-            int prizes_count = row_count - 2 / 2;
-            Line last_line = lines[lines.Length - 1];
-            Point position = new Point(last_line.position.X, last_line.position.Y + padding / 2);
-            DrawPrize(bad_prize, position);
+            int offset_count = prizes.Length / 2;
+            int start_offset = offset_count * (Line.spacing * 2) + Line.spacing;
+            Point position = new Point(center.X - start_offset, board.Height - padding);
+            Size size = new Size(Line.spacing * 2, Line.spacing * 2);
 
-
-            for (int i = 1; i <= prizes_count; i++)
+            for (int i = 0; i < prizes.Length; i++)
             {
-
+                Rectangle rectangle = new Rectangle(position, size);
+                PrizeRect prizeRect = new PrizeRect(prizes[i], rectangle);
+                prizeRects[i] = prizeRect;
+                DrawPrize(prizeRect);
+                position.Offset(Line.spacing * 2, 0);
             }
         }
 
-        private void DrawPrize(Prize prize, Point position)
+        private void DrawPrize(PrizeRect prizeRect)
         {
-            graphics.DrawString(String.Format("{0}X", prize.value), font, text_brush, position);
-            Point left_line_top = new Point(position.X - Line.spacing, position.Y + Line.spacing);
-            Point left_line_bottom = new Point(position.X - Line.spacing, position.Y - Line.spacing);
-            Point right_line_top = new Point(position.X + Line.spacing, position.Y + Line.spacing);
-            Point right_line_bottom = new Point(position.X + Line.spacing, position.Y - Line.spacing);
-            graphics.DrawLine(prize.pen, left_line_top, left_line_bottom);
-            graphics.DrawLine(prize.pen, right_line_top, right_line_bottom);
+            graphics.DrawRectangle(prizeRect.prize.pen, prizeRect.rectangle);
+            Point textLocation = new Point(prizeRect.rectangle.Location.X + 5, prizeRect.rectangle.Location.Y + 5);
+            graphics.DrawString(String.Format("{0}X", prizeRect.prize.value), text_font, prizeRect.prize.brush, textLocation);
         }
     }
 }

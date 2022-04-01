@@ -73,7 +73,7 @@
             this.MessageBox.Multiline = true;
             this.MessageBox.Name = "MessageBox";
             this.MessageBox.ReadOnly = true;
-            this.MessageBox.Size = new System.Drawing.Size(180, 343);
+            this.MessageBox.Size = new System.Drawing.Size(155, 105);
             this.MessageBox.TabIndex = 4;
             // 
             // label2
@@ -88,9 +88,9 @@
             // GameZone
             // 
             this.GameZone.BackColor = System.Drawing.Color.Lime;
-            this.GameZone.Location = new System.Drawing.Point(29, 12);
+            this.GameZone.Location = new System.Drawing.Point(27, 48);
             this.GameZone.Name = "GameZone";
-            this.GameZone.Size = new System.Drawing.Size(538, 506);
+            this.GameZone.Size = new System.Drawing.Size(521, 239);
             this.GameZone.TabIndex = 5;
             this.GameZone.TabStop = false;
             // 
@@ -116,7 +116,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
-            this.ClientSize = new System.Drawing.Size(810, 549);
+            this.ClientSize = new System.Drawing.Size(816, 312);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.inputUser);
             this.Controls.Add(this.GameZone);
