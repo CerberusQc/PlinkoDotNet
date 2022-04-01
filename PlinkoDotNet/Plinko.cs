@@ -124,19 +124,21 @@ namespace PlinkoDotNet
 
         // prizes should always be odd numbers
         private static Prize[] prizes = {
-            new Prize(5.0f, Color.Blue),
-            new Prize(2.0f, Color.BlueViolet),
+            new Prize(10.0f, Color.Blue),
+            new Prize(5.0f, Color.BlueViolet),
+            new Prize(2.5f, Color.MediumPurple),
             new Prize(1.5f, Color.MediumPurple),
             new Prize(1.0f, Color.MediumPurple),
+            new Prize(0.5f, Color.Purple),
             new Prize(0.0f, Color.Purple),
             new Prize(0.0f, Color.Purple),
             new Prize(0.0f, Color.Purple),
-            new Prize(0.0f, Color.Purple),
-            new Prize(0.0f, Color.Purple),
+            new Prize(0.5f, Color.Purple),
             new Prize(1.0f, Color.MediumPurple),
             new Prize(1.5f, Color.MediumPurple),
-            new Prize(2.0f, Color.BlueViolet),
-            new Prize(5.0f, Color.Blue)
+            new Prize(2.5f, Color.MediumPurple),
+            new Prize(5.0f, Color.BlueViolet),
+            new Prize(10.0f, Color.Blue)
          };
 
         private static PrizeRect[] prizeRects = new PrizeRect[prizes.Length];
@@ -144,7 +146,7 @@ namespace PlinkoDotNet
         private static int row_count = prizes.Length - 1;
 
         Brush cell_brush = new SolidBrush(Color.DarkGray);
-        Font text_font = new Font(FontFamily.GenericSansSerif, 8);
+        Font text_font = new Font(FontFamily.GenericSansSerif, 7);
 
         String user;
         private double bet;
@@ -221,14 +223,14 @@ namespace PlinkoDotNet
                current_line = line;
             }
 
-            current_line.position.Offset(0, Line.spacing);
+            current_line.position.Offset(0, Line.spacing + Cell.cell_size);
             UpdateBall(current_line.position);
         }
 
         private void UpdateBall(Point position)
         {
             position.X = ball.rectangle.X;
-            position.Offset(offset_x, -offset_y);
+            position.Offset(offset_x, 0);
             ball.rectangle.Location = position;
             DrawCell(ball);
 
@@ -285,7 +287,7 @@ namespace PlinkoDotNet
         private void DrawPrize(PrizeRect prizeRect)
         {
             graphics.DrawRectangle(prizeRect.prize.pen, prizeRect.rectangle);
-            Point textLocation = new Point(prizeRect.rectangle.Location.X + 5, prizeRect.rectangle.Location.Y + 5);
+            Point textLocation = new Point(prizeRect.rectangle.Location.X, prizeRect.rectangle.Location.Y + 2);
             graphics.DrawString(String.Format("{0}X", prizeRect.prize.value), text_font, prizeRect.prize.brush, textLocation);
         }
     }
