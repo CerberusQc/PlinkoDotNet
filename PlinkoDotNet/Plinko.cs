@@ -11,12 +11,12 @@ namespace PlinkoDotNet
 {
     internal class Settings
     {
-        internal const int lineSpacing = 15;
-        internal const int cellSize = 10;
-        internal const int boardPadding = 30;
-        internal static int animationSpeed = 200;
+        public const int lineSpacing = 15;
+        public const int cellSize = 10;
+        public const int boardPadding = 30;
+        public static int animationSpeed = 200;
 
-        internal static Color ballColor = Color.White;
+        internal static Color ballColor = Color.Orange;
         internal static Color boardColor = Color.DarkGray;
 
         // prizes should always be odd numbers (bests are 11-13-15)
@@ -66,7 +66,7 @@ namespace PlinkoDotNet
                     if (i % 2 != 0)
                     {
                         int offset = i * spacing;
-                        cells.Add(new Cell(i * -1, new Point(position.X + offset, position.Y),Settings.boardColor));
+                        cells.Add(new Cell(i * -1, new Point(position.X + offset, position.Y), Settings.boardColor));
                         cells.Add(new Cell(i, new Point(position.X - (offset), position.Y), Settings.boardColor));
                     }
                 }
@@ -113,6 +113,44 @@ namespace PlinkoDotNet
 
     }
 
+    internal class Ball
+    {
+        private Cell cell;
+        private Graphics graphics;
+        private int offset = 0;
+        private Random random = new Random();
+
+        public Ball(Cell cell, Graphics graphics)
+        {
+            this.cell = cell;
+            this.graphics = graphics;
+        }
+
+        public void UpdateDraw(Point position)
+        {
+            position.X = cell.rectangle.X;
+            position.Offset(offset, 0);
+            cell.rectangle.Location = position;
+            cell.Draw(graphics);
+
+            UpdateOffset();
+
+            Thread.Sleep(Settings.animationSpeed);
+        }
+
+        private void UpdateOffset()
+        {
+            // pick a side to fall
+            offset = random.Next(2) == 0 ? -Settings.lineSpacing : Settings.lineSpacing;
+        }
+
+        internal Point GetLocation()
+        {
+            return cell.rectangle.Location;
+        }
+    
+    }
+
     internal class Prize
     {
         public float value;
@@ -145,7 +183,7 @@ namespace PlinkoDotNet
         public void Draw(Graphics graphics)
         {
             graphics.DrawRectangle(prize.pen, rectangle);
-            Point textLocation = new Point(rectangle.Location.X, rectangle.Location.Y + 2);
+            Point textLocation = new Point(rectangle.Location.X, rectangle.Location.Y + Settings.lineSpacing);
             graphics.DrawString(String.Format("{0}X", prize.value), font, prize.brush, textLocation);
         }
     }
@@ -157,18 +195,13 @@ namespace PlinkoDotNet
 
         private bool debug = false;
         private const int padding = Settings.boardPadding;
-        private int speed = Settings.animationSpeed;
-        private int offset_left = -Line.spacing;
-        private int offset_right = Line.spacing;
-        private int offset_x = 0;
-        private Random random = new Random();
 
         private Line[] lines;
         private Control board;
         private Graphics graphics;
         private Rectangle rectangle;
         private Point center;
-        private Cell ball;
+        private Ball ball;
         private string user;
         private Color color;
         private double bet;
@@ -253,35 +286,27 @@ namespace PlinkoDotNet
             Line current_line = lines[0];
             Cell first_cell = current_line.cells[0];
             Point position = first_cell.rectangle.Location;
-            ball = new Cell(0, position, );
-            ball.brush = ball_brush;
+            Cell ballCell= new Cell(0, position, Settings.ballColor);
+            ball = new Ball(ballCell, graphics);
+
 
             foreach (Line line in lines)
             {
-                UpdateBall(line.position);
+                ball.UpdateDraw(line.position);
                 current_line = line;
             }
 
-            current_line.position.Offset(0, Line.spacing + Settings.cellSize + 5);
-            UpdateBall(current_line.position);
-        }
-
-        private void UpdateBall(Point position)
-        {
-            position.X = ball.rectangle.X;
-            position.Offset(offset_x, 0);
-            ball.rectangle.Location = position;
-            ball.Draw(graphics);
-
-            offset_x = random.Next(2) == 0 ? offset_left : offset_right; // pick a side to fall
-            Thread.Sleep(speed);
+            current_line.position.Offset(0, Line.spacing);
+            ball.UpdateDraw(current_line.position);
         }
 
         private Prize CheckPrize()
         {
+            Point ballLocation = ball.GetLocation();
+
             foreach (PrizeRect prizeRect in prizeRects)
             {
-                if (prizeRect.rectangle.Contains(ball.rectangle.Location))
+                if (prizeRect.rectangle.Contains(ballLocation))
                 {
                     return prizeRect.prize;
                 }
